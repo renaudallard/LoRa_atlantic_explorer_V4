@@ -95,8 +95,8 @@ If the upload does not start, hold PRG, press and release RST, then release
 PRG. The board uses a CP2102 USB chip (clones may use a CH340). Linux has
 drivers for both, Windows may need one.
 
-Then add the device in Home Assistant under Settings, Devices & services, using
-the `api_key`. Later updates go over Wi-Fi.
+Then add the board to Home Assistant, see [Adding the board](#adding-the-board).
+Later updates go over Wi-Fi.
 
 ### 3. Check the radio
 
@@ -123,9 +123,8 @@ Uncomment the `water_heater:` block in `explorer-v4.yaml`. If the pairing log
 reports another `io_device_type` or an `io_subtype`, use those values. Flash
 again.
 
-Home Assistant then shows a water heater entity with the water temperature,
-the target and the mode, plus energy, heat pump running, electric backup
-running and an experimental boost switch.
+The heater entities then show up in Home Assistant, see
+[In Home Assistant](#in-home-assistant).
 
 | Heater | Home Assistant mode |
 |--------|---------------------|
@@ -140,6 +139,80 @@ setting a temperature. Off and holiday modes are not available.
 
 Once the heater works, remove `discover_and_pair_button`,
 `accept_foreign_pairing` and `scan_paired_devices_button`, then flash again.
+
+## In Home Assistant
+
+Water heater entities from ESPHome need Home Assistant 2026.2 or later.
+
+### Adding the board
+
+The data goes straight from the board to Home Assistant through the ESPHome
+integration. There is no broker or cloud service to set up.
+
+1. Once the board is on Wi-Fi, Home Assistant finds it by itself. Go to
+   Settings > Devices & services, where "Explorer V4" is listed as
+   Discovered, and select Configure.
+2. When asked for the encryption key, paste the `api_key` from
+   `secrets.yaml`.
+
+If the board is not discovered (mDNS blocked, other VLAN), add it by hand:
+Settings > Devices & services > Add Integration > ESPHome, then enter the
+board's IP address (printed in the log, or shown by your router), port
+`6053`, and the `api_key`.
+
+### Entities
+
+After the second flash, the "Explorer V4" device page lists:
+
+| Entity | Type | Content |
+|--------|------|---------|
+| Hot water | water heater | water temperature, target, mode |
+| Hot water energy | sensor | kWh used since installation |
+| Hot water heat pump | binary sensor | on while the compressor runs |
+| Hot water electric backup | binary sensor | on while the electric element heats |
+| Hot water boost | switch | boost on or off (experimental) |
+
+The component also adds diagnostic entities such as the radio link health.
+Values appear a few seconds after boot, then the heater is read every 5
+minutes (`status_poll_interval`). Entity IDs are built from the device and
+entity names, for example `water_heater.explorer_v4_hot_water`. Check the
+exact IDs under Settings > Devices & services > Entities before using them in
+automations.
+
+### Dashboard
+
+Add a Tile card with the Hot water entity. Selecting it opens the controls
+for the mode and the target temperature. Add the binary sensors to the same
+card or to an Entities card to see what is heating.
+
+### Energy dashboard
+
+The energy sensor counts up since the heater was installed, which is what the
+Energy dashboard expects. Go to Settings > Dashboards > Energy and add
+"Hot water energy" under Individual devices. Home Assistant only counts the
+consumption from that moment on.
+
+### Automations
+
+The water heater entity takes the standard actions. For example, to switch
+to ECO every night:
+
+    automation:
+      - alias: "Hot water ECO at night"
+        triggers:
+          - trigger: time
+            at: "22:00:00"
+        actions:
+          - action: water_heater.set_operation_mode
+            target:
+              entity_id: water_heater.explorer_v4_hot_water
+            data:
+              operation_mode: eco
+
+`water_heater.set_temperature` sets the target. It only takes effect in
+`eco` or `performance` mode. The Calypso only accepts its own fixed
+temperature steps, the Explorer V4 may behave the same: if a target is not
+taken, use one of the values from the heater's display.
 
 ## Troubleshooting
 
