@@ -1,0 +1,93 @@
+# io-homecontrol hub for an Atlantic Explorer V4 water heater.
+# Board: AZDelivery / Heltec WiFi LoRa 32 V2 (ESP32 + SX1276, micro-USB).
+# Component: https://github.com/laberning/home_io_control
+#
+# Two stages:
+#   1. Flash as is, pair the heater with "Discover & Pair" (or recover the
+#      key from a Cozytouch bridge) and note the address printed in the log.
+#   2. Uncomment the water_heater: block, put the address in secrets.yaml
+#      and flash again.
+
+substitutions:
+  name: explorer-v4-hub
+  friendly_name: Explorer V4
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  # Raw frame logging. Useful for an issue report or to find the heater's
+  # address by hand. The system key is masked in the output.
+  # build_flags:
+  #   - -DIOHOME_FRAME_LOG
+
+esp32:
+  variant: esp32
+  framework:
+    type: esp-idf
+
+# Pairing results are only printed at DEBUG level.
+logger:
+  level: DEBUG
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+api:
+  encryption:
+    key: !secret api_key
+
+# Encrypted OTA, reusing the api: key above.
+ota:
+  - platform: esphome
+    encryption:
+
+external_components:
+  - source: github://laberning/home_io_control@main
+    components: [home_io_control]
+
+# SX1276 wiring on the Heltec V2, from config/boards/heltec-v2.yaml.
+# On a clone, check these against its pinout if the radio is not found.
+spi:
+  clk_pin:
+    number: 5
+    ignore_strapping_warning: true
+  mosi_pin: 27
+  miso_pin: 19
+
+home_io_control:
+  cs_pin: 18
+  rst_pin: 14
+  dio0_pin: 26
+  radio_type: sx1276
+
+  node_id: !secret hub_node_id
+  system_key: !secret hub_system_key
+
+  # Onboarding helpers. Remove them once the heater is paired and working.
+  discover_and_pair_button: true    # pair a heater no hub has claimed
+  accept_foreign_pairing: true      # "Recover System Key" from a Cozytouch bridge
+  scan_paired_devices_button: true  # list devices that already trust the key
+
+# Stage 2: uncomment after pairing. If Discover & Pair printed a different
+# io_device_type or an io_subtype, use what the log says.
+#
+# water_heater:
+#   - platform: home_io_control
+#     name: "Hot water"
+#     io_device_id: !secret explorer_io_device_id
+#     io_device_type: domestic_hot_water
+#     # system_key: !secret explorer_key  # only if the heater keeps a key of its own
+#     status_poll_interval: 5min
+#     energy:
+#       name: "Hot water energy"
+#     heat_pump_running:
+#       name: "Hot water heat pump"
+#     electric_backup_running:
+#       name: "Hot water electric backup"
+#     boost:                              # experimental
+#       name: "Hot water boost"
