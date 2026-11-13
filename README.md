@@ -12,6 +12,39 @@ component. Its water heater support has been confirmed on an Atlantic Calypso
 Connecté. The Explorer V4 has not been reported there yet, so expect some
 rough edges.
 
+## The home_io_control component
+
+There is nothing to download or install by hand. This block in
+`explorer-v4.yaml` tells ESPHome where to get it:
+
+    external_components:
+      - source: github://laberning/home_io_control@main
+        components: [home_io_control]
+
+At build time ESPHome clones the repository, takes only the
+`home_io_control` component and compiles it into the firmware. This works the
+same from the Home Assistant ESPHome add-on and from the command line. The
+machine doing the build needs internet access.
+
+The clone is cached and refreshed at most once a day, so a build picks up
+upstream changes from `main` within 24 hours. To get the latest fix right
+away, add `refresh: always` next to `components:` for one build, or delete
+the `.esphome/` directory.
+
+Following `main` means an upstream change can break or change behaviour
+between two builds. Upstream has no release tags, so to freeze a known good
+version, replace `main` with a commit hash, for example:
+
+    - source: github://laberning/home_io_control@33e2721727008e5b1f3b6d9bcfaeee45fe42c18e
+
+Upstream documentation worth reading:
+
+- [Getting started](https://github.com/laberning/home_io_control/blob/main/docs/getting-started.md)
+- [Pairing](https://github.com/laberning/home_io_control/blob/main/docs/pairing.md)
+- [Key extraction](https://github.com/laberning/home_io_control/blob/main/docs/key-extraction.md)
+- [Water heaters](https://github.com/laberning/home_io_control/blob/main/docs/configuration/water-heater.md)
+- [Troubleshooting](https://github.com/laberning/home_io_control/blob/main/docs/troubleshooting.md)
+
 ## Files
 
 - `explorer-v4.yaml`: the ESPHome configuration
