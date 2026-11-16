@@ -1,6 +1,7 @@
 # io-homecontrol hub for an Atlantic Explorer V4 water heater.
 # Board: AZDelivery / Heltec WiFi LoRa 32 V2 (ESP32 + SX1276, micro-USB).
-# Component: https://github.com/laberning/home_io_control
+# Component: https://github.com/laberning/home_io_control, taken from the
+# explorer-v4 branch of a fork until the Explorer V4 fixes are merged.
 #
 # Two stages:
 #   1. Flash as is, pair the heater with "Discover & Pair" (or recover the
@@ -46,8 +47,9 @@ ota:
   - platform: esphome
     encryption:
 
+# The fork adds max_temperature, which the Explorer V4 needs (see README).
 external_components:
-  - source: github://laberning/home_io_control@main
+  - source: github://renaudallard/home_io_control@explorer-v4
     components: [home_io_control]
 
 # SX1276 wiring on the Heltec V2, from config/boards/heltec-v2.yaml.
@@ -81,6 +83,7 @@ home_io_control:
 #     name: "Hot water"
 #     io_device_id: !secret explorer_io_device_id
 #     io_device_type: domestic_hot_water
+#     max_temperature: 70                 # the Explorer V4 target scale
 #     # system_key: !secret explorer_key  # only if the heater keeps a key of its own
 #     status_poll_interval: 5min
 #     energy:

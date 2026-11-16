@@ -8,9 +8,9 @@ Home Assistant through the ESPHome native API.
 
 The io-homecontrol stack is the
 [home_io_control](https://github.com/laberning/home_io_control) ESPHome
-component. Its water heater support has been confirmed on an Atlantic Calypso
-Connecté. The Explorer V4 has not been reported there yet, so expect some
-rough edges.
+component. Its water heater support was written for an Atlantic Calypso
+Connecté. The Explorer V4 works with it, but needs the fixes described in
+[Known issues on the Explorer V4](#known-issues-on-the-explorer-v4).
 
 ## The home_io_control component
 
@@ -18,8 +18,14 @@ There is nothing to download or install by hand. This block in
 `explorer-v4.yaml` tells ESPHome where to get it:
 
     external_components:
-      - source: github://laberning/home_io_control@main
+      - source: github://renaudallard/home_io_control@explorer-v4
         components: [home_io_control]
+
+This is the `explorer-v4` branch of a fork of
+[laberning/home_io_control](https://github.com/laberning/home_io_control):
+upstream `main` plus the `max_temperature` option the Explorer V4 needs. Once
+that is merged upstream, go back to
+`github://laberning/home_io_control@main`.
 
 At build time ESPHome clones the repository, takes only the
 `home_io_control` component and compiles it into the firmware. This works the
@@ -27,11 +33,11 @@ same from the Home Assistant ESPHome add-on and from the command line. The
 machine doing the build needs internet access.
 
 The clone is cached and refreshed at most once a day, so a build picks up
-upstream changes from `main` within 24 hours. To get the latest fix right
+changes to the branch within 24 hours. To get the latest fix right
 away, add `refresh: always` next to `components:` for one build, or delete
 the `.esphome/` directory.
 
-Following `main` means an upstream change can break or change behaviour
+Following a branch means a change can break or change behaviour
 between two builds. Upstream has no release tags, so to freeze a known good
 version, replace `main` with a commit hash, for example:
 
@@ -213,6 +219,44 @@ to ECO every night:
 `eco` or `performance` mode. The Calypso only accepts its own fixed
 temperature steps, the Explorer V4 may behave the same: if a target is not
 taken, use one of the values from the heater's display.
+
+## Known issues on the Explorer V4
+
+### The target differs from the heater's display
+
+The card shows a lower target than the display, and the gap grows with the
+temperature: 46 °C on the card for 51 °C on the display, 49 °C for 55 °C.
+
+The heater carries its target on a scale from 20 to 70 °C, where the
+component assumes the Calypso's 20 to 62 °C. Checked on the heater: 51 °C on
+the display is reported as `7C00`, 55 °C as `8C00`, and a target of 47 sent
+on the old scale (`8092`) showed up as 52 °C.
+
+To fix it, build from the fork and tell it the scale. In your configuration
+(`explorer-v4.yaml`, or your own file in the ESPHome add-on):
+
+1. Set the component source:
+
+        external_components:
+          - source: github://renaudallard/home_io_control@explorer-v4
+            components: [home_io_control]
+            refresh: always
+
+   `refresh: always` makes the build fetch the branch again. Remove it once
+   the firmware works.
+
+2. Add `max_temperature: 70` to the water heater:
+
+        water_heater:
+          - platform: home_io_control
+            name: "Hot water"
+            io_device_id: !secret explorer_io_device_id
+            io_device_type: domestic_hot_water
+            max_temperature: 70
+
+3. Install the firmware. The log shows
+   `Target temperature range: 20-70 C` at boot, and the card's target now
+   matches the display.
 
 ## Troubleshooting
 
