@@ -176,7 +176,7 @@ After the second flash, the "Explorer V4" device page lists:
 | Hot water energy | sensor | kWh used since installation |
 | Hot water heat pump | binary sensor | on while the compressor runs |
 | Hot water electric backup | binary sensor | on while the electric element heats |
-| Hot water boost | switch | boost on or off (experimental) |
+| Hot water boost | switch | boost on or off, reads inverted on the Explorer V4, see [The boost switch shows the opposite](#the-boost-switch-shows-the-opposite) |
 
 The component also adds diagnostic entities such as the radio link health.
 Values appear a few seconds after boot, then the heater is read every 5
@@ -264,6 +264,17 @@ log) and keeps the closest value it allows. In manual ECO it keeps at most
 55 °C: a higher target comes back as 55. For more, use manual with ECO off;
 the heater reported 60 and 62 °C there. The card shows what the heater kept
 once it reads the target back, a few seconds after the write.
+
+### The boost switch shows the opposite
+
+The Explorer V4 reports its boost the other way round from the Calypso. The
+`boost` switch shows on while no boost runs and off during a boost, and
+turning it off while no boost runs does nothing. Starting a boost from Home
+Assistant has not been tested yet.
+
+Until the component handles this, leave the `boost:` entry out and start a
+boost from the heater's display. `electric_backup_running` shows a boost
+instead: it was on during each boost seen so far, and off otherwise.
 
 ## Troubleshooting
 
