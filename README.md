@@ -288,6 +288,16 @@ instead: it was on during each boost seen so far, and off otherwise.
 
 ## Troubleshooting
 
+- The card shows `eco` and no target: the heater is in AUTO, where it picks
+  its own target and a target set in Home Assistant is not sent (the log
+  says `target ignored in automatic mode`). Select `heat_pump` or
+  `performance` first.
+- Nothing shows up in the Home Assistant activity after a change: the
+  activity only lists state changes, so a command the heater refused leaves
+  no trace there. Look at the ESPHome log instead. A target logs
+  `Sending hot water target`, followed by the heater's answer and, a few
+  seconds later, `hot water target` with the value it kept.
+
 Uncomment the `-DIOHOME_FRAME_LOG` build flag to log every radio frame (the
 system key is masked). The build warning about `domestic_hot_water` not being
 confirmed on a real device is expected. Reports about the Explorer V4 are
