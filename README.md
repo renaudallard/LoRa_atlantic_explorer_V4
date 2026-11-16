@@ -232,8 +232,8 @@ temperature: 46 °C on the card for 51 °C on the display, 49 °C for 55 °C.
 
 The heater carries its target on a scale from 20 to 70 °C, where the
 component assumes the Calypso's 20 to 62 °C. Checked on the heater: 51 °C on
-the display is reported as `7C00`, 55 °C as `8C00`, and a target of 47 sent
-on the old scale (`8092`) showed up as 52 °C.
+the display is reported as `7C00`, 55 °C as `8C00`, a target of 47 sent on
+the old scale (`8092`) showed up as 52 °C, and 53 (`9D25`) as 59 °C.
 
 To fix it, build from the fork and tell it the scale. In your configuration
 (`explorer-v4.yaml`, or your own file in the ESPHome add-on):
@@ -260,6 +260,11 @@ To fix it, build from the fork and tell it the scale. In your configuration
 3. Install the firmware. The log shows
    `Target temperature range: 20-70 C` at boot, and the card's target now
    matches the display.
+
+   If it still says `20-62 C`, the fork is running but `max_temperature` is
+   not in the `water_heater:` entry, or not at the same indentation as
+   `io_device_type`. The build does not complain, it just keeps the default:
+   53 set in Home Assistant then shows as 59 on the display.
 
 ### Some targets are not kept
 
