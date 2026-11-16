@@ -134,12 +134,16 @@ The heater entities then show up in Home Assistant, see
 
 | Heater | Home Assistant mode |
 |--------|---------------------|
-| AUTO | `heat_pump` |
-| Manual, ECO on | `eco` |
+| AUTO | `eco` |
+| Manual, ECO on | `heat_pump` |
 | Manual, ECO off | `performance` |
 
-In AUTO the heater picks its own target, so set `eco` or `performance` before
-setting a temperature. Off and holiday modes are not available.
+This is the mapping of current upstream `main`, which the fork follows. Builds
+from before upstream commit 8f33376 (2026-11-15) used AUTO as `heat_pump` and
+manual ECO as `eco`.
+
+In AUTO the heater picks its own target, so set `heat_pump` or `performance`
+before setting a temperature. Off and holiday modes are not available.
 
 ### 6. Clean up
 
@@ -201,10 +205,10 @@ consumption from that moment on.
 ### Automations
 
 The water heater entity takes the standard actions. For example, to switch
-to ECO every night:
+to manual ECO every night:
 
     automation:
-      - alias: "Hot water ECO at night"
+      - alias: "Hot water manual ECO at night"
         triggers:
           - trigger: time
             at: "22:00:00"
@@ -213,10 +217,10 @@ to ECO every night:
             target:
               entity_id: water_heater.explorer_v4_hot_water
             data:
-              operation_mode: eco
+              operation_mode: heat_pump
 
 `water_heater.set_temperature` sets the target. It only takes effect in
-`eco` or `performance` mode, and the heater does not keep every value, see
+`heat_pump` or `performance` mode, and the heater does not keep every value, see
 [Some targets are not kept](#some-targets-are-not-kept).
 
 ## Known issues on the Explorer V4
