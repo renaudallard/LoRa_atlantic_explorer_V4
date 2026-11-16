@@ -216,9 +216,8 @@ to ECO every night:
               operation_mode: eco
 
 `water_heater.set_temperature` sets the target. It only takes effect in
-`eco` or `performance` mode. The Calypso only accepts its own fixed
-temperature steps, the Explorer V4 may behave the same: if a target is not
-taken, use one of the values from the heater's display.
+`eco` or `performance` mode, and the heater does not keep every value, see
+[Some targets are not kept](#some-targets-are-not-kept).
 
 ## Known issues on the Explorer V4
 
@@ -257,6 +256,14 @@ To fix it, build from the fork and tell it the scale. In your configuration
 3. Install the firmware. The log shows
    `Target temperature range: 20-70 C` at boot, and the card's target now
    matches the display.
+
+### Some targets are not kept
+
+The heater answers every target write with "adjusted" (result code 10 in the
+log) and keeps the closest value it allows. In manual ECO it keeps at most
+55 °C: a higher target comes back as 55. For more, use manual with ECO off;
+the heater reported 60 and 62 °C there. The card shows what the heater kept
+once it reads the target back, a few seconds after the write.
 
 ## Troubleshooting
 
