@@ -143,7 +143,8 @@ from before upstream commit 8f33376 (2026-11-15) used AUTO as `heat_pump` and
 manual ECO as `eco`.
 
 In AUTO the heater picks its own target, so set `heat_pump` or `performance`
-before setting a temperature. Off and holiday modes are not available.
+before setting a temperature. The heater's holiday mode is the card's away
+mode, see [Away](#away). There is no off mode.
 
 ### 6. Clean up
 
@@ -292,6 +293,27 @@ it is, including one started from the heater's display.
 Starting or ending a boost from the switch has not been tested yet. If it
 does nothing, use the heater's display. `electric_backup_running` also
 shows a boost: it was on during each boost seen so far, and off otherwise.
+
+### Away
+
+Away from Home Assistant works on the heater, on and off. The Explorer V4
+does not report it the way the Calypso does: its operating-mode word stays
+`4900` while away, so older builds showed away off and a 20 °C target while
+the heater was on holiday, and offered no way to end it from the card.
+
+The fork reads away from the target instead, which drops to `0000` while the
+heater is away, as it does on a Calypso during a holiday. The card then shows
+away on, no target, and ends it with the toggle. With an older build, end it
+from Developer Tools > Actions:
+
+    action: water_heater.set_away_mode
+    target:
+      entity_id: water_heater.explorer_v4_hot_water
+    data:
+      away_mode: false
+
+Away started from Home Assistant has no end date. Use the heater's own menu
+for a holiday that ends by itself.
 
 ## Troubleshooting
 
