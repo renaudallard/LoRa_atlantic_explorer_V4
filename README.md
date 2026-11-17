@@ -23,7 +23,7 @@ There is nothing to download or install by hand. This block in
 
 This is the `explorer-v4` branch of a fork of
 [laberning/home_io_control](https://github.com/laberning/home_io_control):
-upstream `main` plus the `max_temperature` option the Explorer V4 needs. Once
+upstream `main` plus `io_model: explorer_v4`, which the Explorer V4 needs. Once
 that is merged upstream, go back to
 `github://laberning/home_io_control@main`.
 
@@ -180,7 +180,7 @@ After the second flash, the "Explorer V4" device page lists:
 | Hot water energy | sensor | kWh used since installation |
 | Hot water heat pump | binary sensor | on while the compressor runs |
 | Hot water electric backup | binary sensor | on while the electric element heats |
-| Hot water boost | switch | boost on or off, reads inverted on the Explorer V4, see [The boost switch shows the opposite](#the-boost-switch-shows-the-opposite) |
+| Hot water boost | switch | on while a boost runs, see [Boost](#boost) |
 
 The component also adds diagnostic entities such as the radio link health.
 Values appear a few seconds after boot, then the heater is read every 5
@@ -235,7 +235,7 @@ component assumes the Calypso's 20 to 62 °C. Checked on the heater: 51 °C on
 the display is reported as `7C00`, 55 °C as `8C00`, a target of 47 sent on
 the old scale (`8092`) showed up as 52 °C, and 53 (`9D25`) as 59 °C.
 
-To fix it, build from the fork and tell it the scale. In your configuration
+To fix it, build from the fork and declare the model. In your configuration
 (`explorer-v4.yaml`, or your own file in the ESPHome add-on):
 
 1. Set the component source:
@@ -248,23 +248,29 @@ To fix it, build from the fork and tell it the scale. In your configuration
    `refresh: always` makes the build fetch the branch again. Remove it once
    the firmware works.
 
-2. Add `max_temperature: 70` to the water heater:
+2. Add `io_subtype: 0` and `io_model: explorer_v4` to the water heater:
 
         water_heater:
           - platform: home_io_control
             name: "Hot water"
             io_device_id: !secret explorer_io_device_id
             io_device_type: domestic_hot_water
-            max_temperature: 70
+            io_subtype: 0
+            io_model: explorer_v4
+
+   The model sets the 20 to 70 °C scale and reads the boost the right way
+   round, see [Boost](#boost). `max_temperature: 70` alone also fixes the
+   scale, but not the boost.
 
 3. Install the firmware. The log shows
    `Target temperature range: 20-70 C` at boot, and the card's target now
    matches the display.
 
-   If it still says `20-62 C`, the fork is running but `max_temperature` is
-   not in the `water_heater:` entry, or not at the same indentation as
-   `io_device_type`. The build does not complain, it just keeps the default:
-   53 set in Home Assistant then shows as 59 on the display.
+   If it still says `20-62 C`, the fork is running but neither the model nor
+   `max_temperature` is in the `water_heater:` entry, or not at the same
+   indentation as `io_device_type`. The build does not complain, it just
+   keeps the default: 53 set in Home Assistant then shows as 59 on the
+   display.
 
 ### Some targets are not kept
 
@@ -275,16 +281,17 @@ as 55. For more, use manual with ECO off; the heater kept 59, 60 and 62 °C
 there. The card shows what the heater kept once it reads the target back, a
 few seconds after the write.
 
-### The boost switch shows the opposite
+### Boost
 
-The Explorer V4 reports its boost the other way round from the Calypso. The
-`boost` switch shows on while no boost runs and off during a boost, and
-turning it off while no boost runs does nothing. Starting a boost from Home
-Assistant has not been tested yet.
+The Explorer V4 reports its boost the other way round from the Calypso:
+`4900` at rest and `4A00` during a boost, where the Calypso reports `4A00`
+and `4900`. Without the model the `boost` switch shows on while no boost
+runs and off during one. With `io_model: explorer_v4` it shows the boost as
+it is, including one started from the heater's display.
 
-Until the component handles this, leave the `boost:` entry out and start a
-boost from the heater's display. `electric_backup_running` shows a boost
-instead: it was on during each boost seen so far, and off otherwise.
+Starting or ending a boost from the switch has not been tested yet. If it
+does nothing, use the heater's display. `electric_backup_running` also
+shows a boost: it was on during each boost seen so far, and off otherwise.
 
 ## Troubleshooting
 

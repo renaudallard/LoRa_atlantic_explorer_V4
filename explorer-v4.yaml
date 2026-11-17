@@ -47,7 +47,7 @@ ota:
   - platform: esphome
     encryption:
 
-# The fork adds max_temperature, which the Explorer V4 needs (see README).
+# The fork adds io_model: explorer_v4, which the Explorer V4 needs (see README).
 external_components:
   - source: github://renaudallard/home_io_control@explorer-v4
     components: [home_io_control]
@@ -83,7 +83,8 @@ home_io_control:
 #     name: "Hot water"
 #     io_device_id: !secret explorer_io_device_id
 #     io_device_type: domestic_hot_water
-#     max_temperature: 70                 # the Explorer V4 target scale
+#     io_subtype: 0
+#     io_model: explorer_v4               # 20-70 C target scale, boost read
 #     # system_key: !secret explorer_key  # only if the heater keeps a key of its own
 #     status_poll_interval: 5min
 #     energy:
@@ -92,6 +93,5 @@ home_io_control:
 #       name: "Hot water heat pump"
 #     electric_backup_running:
 #       name: "Hot water electric backup"
-#     # Reads inverted on the Explorer V4, leave it out for now (see README).
-#     # boost:
-#     #   name: "Hot water boost"
+#     boost:                              # starting one from here is untested
+#       name: "Hot water boost"
