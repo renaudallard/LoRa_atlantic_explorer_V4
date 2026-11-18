@@ -93,5 +93,5 @@ home_io_control:
 #       name: "Hot water heat pump"
 #     electric_backup_running:
 #       name: "Hot water electric backup"
-#     boost:                              # starting one from here is untested
+#     boost:
 #       name: "Hot water boost"

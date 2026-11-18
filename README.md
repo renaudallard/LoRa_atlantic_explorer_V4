@@ -181,7 +181,7 @@ After the second flash, the "Explorer V4" device page lists:
 | Hot water energy | sensor | kWh used since installation |
 | Hot water heat pump | binary sensor | on while the compressor runs |
 | Hot water electric backup | binary sensor | on while the electric element heats |
-| Hot water boost | switch | on while a boost runs, see [Boost](#boost) |
+| Hot water boost | switch | starts and ends a boost, on while one runs, see [Boost](#boost) |
 
 The component also adds diagnostic entities such as the radio link health.
 Values appear a few seconds after boot, then the heater is read every 5
@@ -290,9 +290,13 @@ and `4900`. Without the model the `boost` switch shows on while no boost
 runs and off during one. With `io_model: explorer_v4` it shows the boost as
 it is, including one started from the heater's display.
 
-Starting or ending a boost from the switch has not been tested yet. If it
-does nothing, use the heater's display. `electric_backup_running` also
-shows a boost: it was on during each boost seen so far, and off otherwise.
+Starting and ending a boost from the switch both work on the heater. While
+a boost runs the card shows a target of 62 °C: that is what the heater
+reports for the boost, and your own target is back when it ends. The log
+shows the heater answering 0 to the boost duration write sent before the
+command; the boost starts all the same, and the heater sets the duration
+itself. `electric_backup_running` also shows a boost: it was on during
+each boost seen so far, and off otherwise.
 
 ### Away
 
