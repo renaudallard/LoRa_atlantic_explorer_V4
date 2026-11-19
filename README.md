@@ -275,12 +275,14 @@ To fix it, build from the fork and declare the model. In your configuration
 
 ### Some targets are not kept
 
-The heater answers every target write with "adjusted" (result code 10 in the
-log) and keeps the closest value it allows, always a whole degree: 59.3
-became 59. In manual ECO it keeps at most 55 °C: a higher target comes back
-as 55. For more, use manual with ECO off; the heater kept 59, 60 and 62 °C
-there. The card shows what the heater kept once it reads the target back, a
-few seconds after the write.
+The heater keeps whole degrees. A target with a fraction is answered with
+"adjusted" (result code 10 in the log) and rounded: 59.3 became 59. A whole
+degree, which is what the card sends once the scale is right, is accepted as
+it is. In manual ECO the heater keeps at most 55 °C: a higher target comes
+back as 55. For more, use manual with ECO off; the heater kept 59, 60 and
+62 °C there. The card shows what the heater kept once it reads the target
+back, about 45 seconds after the write. Boost and away are read back at
+once.
 
 ### Boost
 
