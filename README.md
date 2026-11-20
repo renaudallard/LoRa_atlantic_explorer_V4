@@ -9,7 +9,9 @@ Home Assistant through the ESPHome native API.
 The io-homecontrol stack is the
 [home_io_control](https://github.com/laberning/home_io_control) ESPHome
 component. Its water heater support was written for an Atlantic Calypso
-Connecté. The Explorer V4 works with it, but needs the fixes described in
+Connecté. Upstream `main` supports the Explorer V4 since
+[pull request #252](https://github.com/laberning/home_io_control/pull/252),
+declared with `io_model: explorer_v4`, see
 [Known issues on the Explorer V4](#known-issues-on-the-explorer-v4).
 
 ## The home_io_control component
@@ -18,14 +20,14 @@ There is nothing to download or install by hand. This block in
 `explorer-v4.yaml` tells ESPHome where to get it:
 
     external_components:
-      - source: github://renaudallard/home_io_control@explorer-v4
+      - source: github://laberning/home_io_control@main
         components: [home_io_control]
 
-This is the `explorer-v4` branch of a fork of
-[laberning/home_io_control](https://github.com/laberning/home_io_control):
-upstream `main` plus `io_model: explorer_v4`, which the Explorer V4 needs. Once
-that is merged upstream, go back to
-`github://laberning/home_io_control@main`.
+This is upstream `main`. Earlier versions of this configuration took the
+component from the `explorer-v4` branch of a fork; that branch is no longer
+needed. If your configuration still names it, switch to the source above and
+remove `max_temperature:` from the `water_heater:` entry: `main` has no such
+key, and the build stops with `[max_temperature] is an invalid option`.
 
 At build time ESPHome clones the repository, takes only the
 `home_io_control` component and compiles it into the firmware. This works the
@@ -41,7 +43,9 @@ Following a branch means a change can break or change behaviour
 between two builds. Upstream has no release tags, so to freeze a known good
 version, replace `main` with a commit hash, for example:
 
-    - source: github://laberning/home_io_control@33e2721727008e5b1f3b6d9bcfaeee45fe42c18e
+    - source: github://laberning/home_io_control@a3fe0293480a8d68b59620f7081da48de75cc78d
+
+That commit is the one that added the Explorer V4.
 
 Upstream documentation worth reading:
 
@@ -138,9 +142,7 @@ The heater entities then show up in Home Assistant, see
 | Manual, ECO on | `heat_pump` |
 | Manual, ECO off | `performance` |
 
-This is the mapping of current upstream `main`, which the fork follows. Builds
-from before upstream commit 8f33376 (2026-11-15) used AUTO as `heat_pump` and
-manual ECO as `eco`.
+This is the mapping of upstream `main`.
 
 In AUTO the heater picks its own target, so set `heat_pump` or `performance`
 before setting a temperature. The heater's holiday mode is the card's away
@@ -226,63 +228,45 @@ to manual ECO every night:
 
 ## Known issues on the Explorer V4
 
-### The target differs from the heater's display
+### Declare the model
 
-The card shows a lower target than the display, and the gap grows with the
-temperature: 46 °C on the card for 51 °C on the display, 49 °C for 55 °C.
+The Explorer V4 reports the same type, subtype, name and brand as a Calypso,
+so only the configuration can tell them apart. Without `io_model:
+explorer_v4` the component treats it as a Calypso:
 
-The heater carries its target on a scale from 20 to 70 °C, where the
-component assumes the Calypso's 20 to 62 °C. Checked on the heater: 51 °C on
-the display is reported as `7C00`, 55 °C as `8C00`, a target of 47 sent on
-the old scale (`8092`) showed up as 52 °C, and 53 (`9D25`) as 59 °C.
+- The card shows a lower target than the display, and the gap grows with the
+  temperature: 46 °C on the card for 51 °C on the display, 49 °C for 55 °C.
+  The heater carries its target on a scale from 20 to 70 °C, where the
+  Calypso's runs from 20 to 62 °C: 51 °C on the display is reported as
+  `7C00`, 55 °C as `8C00`, and 53 set in Home Assistant lands as 59 on the
+  display.
+- The `boost` switch shows on while no boost runs and off during one, see
+  [Boost](#boost).
+- Away never shows, see [Away](#away).
 
-To fix it, build from the fork and declare the model. In your configuration
-(`explorer-v4.yaml`, or your own file in the ESPHome add-on):
+So the `water_heater:` entry needs `io_subtype: 0` and `io_model:
+explorer_v4`, as in `explorer-v4.yaml`:
 
-1. Set the component source:
+    water_heater:
+      - platform: home_io_control
+        name: "Hot water"
+        io_device_id: !secret explorer_io_device_id
+        io_device_type: domestic_hot_water
+        io_subtype: 0
+        io_model: explorer_v4
 
-        external_components:
-          - source: github://renaudallard/home_io_control@explorer-v4
-            components: [home_io_control]
-            refresh: always
-
-   `refresh: always` makes the build fetch the branch again. Remove it once
-   the firmware works.
-
-2. Add `io_subtype: 0` and `io_model: explorer_v4` to the water heater:
-
-        water_heater:
-          - platform: home_io_control
-            name: "Hot water"
-            io_device_id: !secret explorer_io_device_id
-            io_device_type: domestic_hot_water
-            io_subtype: 0
-            io_model: explorer_v4
-
-   The model sets the 20 to 70 °C scale and reads the boost the right way
-   round, see [Boost](#boost). `max_temperature: 70` alone also fixes the
-   scale, but not the boost.
-
-3. Install the firmware. The log shows
-   `Target temperature range: 20-70 C` at boot, and the card's target now
-   matches the display.
-
-   If it still says `20-62 C`, the fork is running but neither the model nor
-   `max_temperature` is in the `water_heater:` entry, or not at the same
-   indentation as `io_device_type`. The build does not complain, it just
-   keeps the default: 53 set in Home Assistant then shows as 59 on the
-   display.
+Keep both keys at the same indentation as `io_device_type`. With the model
+the card's target matches the display.
 
 ### Some targets are not kept
 
-The heater keeps whole degrees. A target with a fraction is answered with
-"adjusted" (result code 10 in the log) and rounded: 59.3 became 59. A whole
-degree, which is what the card sends once the scale is right, is accepted as
-it is. In manual ECO the heater keeps at most 55 °C: a higher target comes
-back as 55. For more, use manual with ECO off; the heater kept 59, 60 and
-62 °C there. The card shows what the heater kept once it reads the target
-back, about 45 seconds after the write. Boost and away are read back at
-once.
+The heater keeps whole degrees, so the card offers whole degrees only. A
+target with a fraction, from an automation for example, is not sent: the log
+says `rejected (the heater accepts ... C)`. In manual ECO the heater keeps at
+most 55 °C: a higher target comes back as 55. For more, use manual with ECO
+off; the heater kept 59, 60 and 62 °C there. The card shows what the heater
+kept: the component reads the target back right after the write, so the new
+value shows within a second. Boost and away are read back at once too.
 
 ### Boost
 
@@ -304,12 +288,14 @@ each boost seen so far, and off otherwise.
 
 Away from Home Assistant works on the heater, on and off. The Explorer V4
 does not report it the way the Calypso does: its operating-mode word stays
-`4900` while away, so older builds showed away off and a 20 °C target while
-the heater was on holiday, and offered no way to end it from the card.
+`4900` while away. Without the model the card shows away off and a 20 °C
+target while the heater is on holiday, and offers no way to end it.
 
-The fork reads away from the target instead, which drops to `0000` while the
-heater is away, as it does on a Calypso during a holiday. The card then shows
-away on, no target, and ends it with the toggle. With an older build, end it
+With `io_model: explorer_v4` the component reads away from the target
+instead, which drops to `0000` while the heater is away, as it does on a
+Calypso during a holiday. The card then shows away on, no target, and ends it
+with the toggle. A target of 20 °C would read the same way, as away; the
+heater has not reported a target below 50 °C. Without the model, end away
 from Developer Tools > Actions:
 
     action: water_heater.set_away_mode
@@ -330,8 +316,8 @@ for a holiday that ends by itself.
 - Nothing shows up in the Home Assistant activity after a change: the
   activity only lists state changes, so a command the heater refused leaves
   no trace there. Look at the ESPHome log instead. A target logs
-  `Sending hot water target`, followed by the heater's answer and, a few
-  seconds later, `hot water target` with the value it kept.
+  `Sending hot water target`, followed by the heater's answer and, right
+  after, `hot water target` with the value it kept.
 
 Uncomment the `-DIOHOME_FRAME_LOG` build flag to log every radio frame (the
 system key is masked). The build warning about `domestic_hot_water` not being
@@ -341,4 +327,5 @@ welcome upstream at
 
 ## Tested with
 
-- ESPHome 2026.10.2 (configuration validated and firmware built)
+- ESPHome 2026.11.0 with upstream `main` at c2ccd5d (configuration validated
+  and firmware built, 2026-11-20)
